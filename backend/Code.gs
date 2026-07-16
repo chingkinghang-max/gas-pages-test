@@ -62,6 +62,12 @@ function listMessages() {
   return { success: true, messages: messages };
 }
 
+function authorizeWebApp() {
+  var url = ScriptApp.getService().getUrl();
+  Logger.log('Web App URL: ' + url);
+  return '授權完成！Web App URL: ' + url;
+}
+
 function addMessage(name, message) {
   if (!name || !message) return { success: false, message: '請填寫姓名和留言' };
   var ss = SpreadsheetApp.getActiveSpreadsheet();
