@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Colour Your Life · 管理後台</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans TC',sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh}
+#adminLogin{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+#adminLogin .box{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:32px;width:100%;max-width:360px}
+#adminLogin h2{color:#ff6b6b;margin-bottom:20px;text-align:center}
+#adminLogin input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#c9d1d9;font-size:1rem;outline:none}
+#adminLogin input:focus{border-color:#ff6b6b}
+#adminLogin button{width:100%;padding:10px;margin-top:14px;border:none;border-radius:8px;background:#238636;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+#adminLogin .err{color:#f85149;font-size:.85rem;margin-top:8px;text-align:center}
+#adminMain{display:none}
+.admin-header{background:#161b22;border-bottom:1px solid #30363d;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20}
+.admin-header h2{font-size:1.1rem;color:#ff6b6b}
+.admin-header .logout-btn{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.8rem}
+.tabs{display:flex;gap:4px;padding:12px 20px 0;background:#0d1117;position:sticky;top:57px;z-index:15;overflow-x:auto}
+.tabs button{padding:8px 16px;border:1px solid #30363d;border-bottom:none;border-radius:8px 8px 0 0;background:#161b22;color:#8b949e;cursor:pointer;font-size:.82rem;white-space:nowrap}
+.tabs button.active{background:#0d1117;color:#f0f6fc;border-bottom-color:#0d1117}
+.tab-content{padding:20px;display:none}
+.tab-content.active{display:block}
+.search-box{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.search-box input{flex:1;min-width:150px;padding:8px 12px;border-radius:6px;border:1px solid #30363d;background:#161b22;color:#c9d1d9;font-size:.9rem;outline:none}
+.search-box input:focus{border-color:#ff6b6b}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #21262d}
+th{color:#8b949e;font-weight:600;white-space:nowrap}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.btn{padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:500}
+.btn-pri{background:#238636;color:#fff}
+.btn-dan{background:#da3633;color:#fff}
+.btn-sec{background:#21262d;color:#c9d1d9;border:1px solid #30363d}
+.btn-warn{background:#d29922;color:#fff}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto}
+.modal h3{color:#f0f6fc;margin-bottom:16px}
+.modal .field{margin-bottom:12px}
+.modal .field label{display:block;font-size:.8rem;color:#8b949e;margin-bottom:4px}
+.modal .field select,.modal .field input{width:100%;padding:8px 12px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#c9d1d9;font-size:.9rem;outline:none}
+.modal .field select:focus,.modal .field input:focus{border-color:#ff6b6b}
+.modal .modal-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.group-detail{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px;margin-bottom:14px}
+.group-detail .gd-row{display:flex;justify-content:space-between;margin:3px 0;font-size:.85rem}
+.group-detail .gd-row .lbl{color:#8b949e}
+.group-detail .gd-row .val{color:#f0f6fc;font-weight:500}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#161b22;border:1px solid #30363d;color:#c9d1d9;padding:10px 20px;border-radius:8px;font-size:.85rem;z-index:200;display:none}
+.bonus-section{background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.2);border-radius:8px;padding:14px;margin:14px 0}
+.bonus-section h4{color:#d29922;margin-bottom:8px;font-size:.9rem}
+.bonus-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:end}
+.bonus-row .field{flex:1;min-width:100px;margin-bottom:0}
+hr{border:none;border-top:1px solid #21262d;margin:16px 0}
+.record-list{max-height:400px;overflow-y:auto}
+.record-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #21262d;font-size:.8rem}
+.record-row .rr-group{color:#ff6b6b}
+.record-row .rr-exp{color:#3fb950;font-weight:600}
+.record-row .rr-time{color:#8b949e;font-size:.73rem}
+</style>
+</head>
+<body>
+
+<div id="adminLogin">
+  <div class="box">
+    <h2>🔐 Colour Your Life 管理後台</h2>
+    <input type="password" id="adminPwd" placeholder="管理員密碼">
+    <button onclick="handleAdminLogin()">登入</button>
+    <div id="adminLoginErr" class="err"></div>
+  </div>
+</div>
+
+<div id="adminMain">
+  <div class="admin-header">
+    <h2>⚙️ 管理後台</h2>
+    <div><a href="index.html" style="color:#8b949e;font-size:.8rem;margin-right:12px;text-decoration:none;">← 返回主頁</a><button class="logout-btn" onclick="adminLogout()">登出</button></div>
+  </div>
+  <div class="tabs">
+    <button class="active" onclick="switchTab('groups')">👥 組別管理</button>
+    <button onclick="switchTab('records')">📋 記錄查閱</button>
+    <button onclick="switchTab('station')">📌 攤位管理</button>
+  </div>
+  <div class="tab-content active" id="tab-groups">
+    <div class="search-box">
+      <input type="text" id="groupSearch" placeholder="搜尋組別..." oninput="filterGroups()">
+      <button class="btn btn-pri" onclick="refreshGroups()">🔄 刷新</button>
+    </div>
+    <div id="groupTableWrap"><p style="color:#8b949e;">載入中...</p></div>
+  </div>
+  <div class="tab-content" id="tab-records">
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="recordSearch" placeholder="搜尋組別..." style="flex:1;min-width:120px;padding:8px 12px;border-radius:6px;border:1px solid #30363d;background:#161b22;color:#c9d1d9;font-size:.9rem;outline:none;">
+      <button class="btn btn-sec" onclick="refreshRecords()">🔄 刷新</button>
+    </div>
+    <div id="recordsWrap" class="record-list"></div>
+  </div>
+  <div class="tab-content" id="tab-station">
+    <div class="search-box">
+      <input type="text" id="stationSearch" placeholder="搜尋組別..." oninput="filterStationGroups()">
+      <div class="field" style="margin:0;min-width:120px;">
+        <select id="stationSelect" onchange="loadStationGroups()" style="padding:8px 12px;border-radius:6px;border:1px solid #30363d;background:#161b22;color:#c9d1d9;font-size:.9rem;outline:none;">
+          <option value="">— 揀攤位 —</option>
+        </select>
+      </div>
+      <button class="btn btn-pri" onclick="loadStationGroups()">🔄 刷新</button>
+    </div>
+    <div id="stationGroupList"><p style="color:#8b949e;">揀個攤位睇下有邊啲組未完成</p></div>
+  </div>
+</div>
+
+<!-- Group Detail Modal -->
+<div class="modal-overlay" id="groupModal">
+  <div class="modal">
+    <h3 id="modalTitle">組別詳情</h3>
+    <div id="modalBody"></div>
+    <div class="modal-actions"><button class="btn btn-sec" onclick="closeModal()">關閉</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var API_URL = 'https://script.google.com/macros/s/AKfycbxaW-xBz5IFpDlCSJ1ybBrGmFGsuoFb9fuxSctdPqy94qfsf45VNP4QVXr4LaZ0N-BM/exec';
+var allGroups = [], allStations = [], allRecords = [];
+
+var ranks = [{t:0,title:'特工見習生'},{t:150,title:'特工助理'},{t:300,title:'助理特工'},{t:450,title:'特工'},{t:600,title:'特工隊長'},{t:750,title:'特工首席隊長'},{t:900,title:'特工署助理署長'},{t:1050,title:'特工署副署長'},{t:1200,title:'特工署署長'}];
+
+function api(action, params, callback) {
+  if (!callback) { callback = params; params = null; }
+  var url = API_URL + '?action=' + action + '&callback=apiCB';
+  if (params) { for (var k in params) url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }
+  window.apiCB = function(d) { delete window.apiCB; callback(d); };
+  var s = document.createElement('script');
+  s.src = url;
+  s.onerror = function() { delete window.apiCB; callback({ success: false, message: '連線失敗' }); };
+  document.body.appendChild(s);
+}
+
+function showToast(m) {
+  var t = document.getElementById('toast');
+  t.textContent = m; t.style.display = 'block';
+  setTimeout(function(){ t.style.display = 'none'; }, 3000);
+}
+
+function handleAdminLogin() {
+  var pwd = document.getElementById('adminPwd').value;
+  api('loginAdmin', { password: pwd }, function(res) {
+    if (res.success) {
+      document.getElementById('adminLogin').style.display = 'none';
+      document.getElementById('adminMain').style.display = 'block';
+      loadAdminData();
+    } else {
+      document.getElementById('adminLoginErr').textContent = '密碼錯誤';
+    }
+  });
+}
+
+function adminLogout() {
+  document.getElementById('adminMain').style.display = 'none';
+  document.getElementById('adminLogin').style.display = 'flex';
+  document.getElementById('adminPwd').value = '';
+  document.getElementById('adminLoginErr').textContent = '';
+}
+
+function loadAdminData() {
+  var loaded = { g: false, s: false, r: false };
+  function check() { if (loaded.g && loaded.s && loaded.r) { renderGroups(allGroups); populateStationSelect(); } }
+  api('allGroups', function(d) { allGroups = d || []; loaded.g = true; check(); });
+  api('allStations', function(d) { allStations = d || []; loaded.s = true; check(); });
+  api('allRecords', function(d) { allRecords = d || []; loaded.r = true; check(); });
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tabs button').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'records') refreshRecords();
+  if (name === 'station') populateStationSelect();
+}
+
+function renderGroups(list) {
+  var wrap = document.getElementById('groupTableWrap');
+  if (!list || list.length === 0) { wrap.innerHTML = '<p style="color:#8b949e;">暫無組別資料。</p>'; return; }
+  var html = '<table><thead><tr><th>組別</th><th>EXP</th><th>階級</th><th>操作</th></tr></thead><tbody>';
+  list.forEach(function(g) {
+    var rank = getRankTitle(g.totalExp);
+    html += '<tr><td><strong>' + escHtml(g.groupId) + '</strong></td><td>' + g.totalExp + '</td><td>' + rank + '</td><td><button class="btn btn-pri" onclick="openGroupModal(\'' + g.groupId + '\')">加分 / 詳情</button></td></tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function filterGroups() {
+  var q = document.getElementById('groupSearch').value.trim().toUpperCase();
+  if (!q) { renderGroups(allGroups); return; }
+  renderGroups(allGroups.filter(function(g) { return g.groupId.toUpperCase().includes(q); }));
+}
+
+function refreshGroups() {
+  api('allGroups', function(d) { allGroups = d || []; renderGroups(allGroups); showToast('已刷新，共 ' + (d ? d.length : 0) + ' 組'); });
+}
+
+function openGroupModal(groupId) {
+  api('profile', { groupId: groupId }, function(profile) {
+    if (profile && profile.success) renderGroupModal(profile);
+    else showToast('錯誤：' + (profile ? profile.message : '無法取得資料'));
+  });
+}
+
+function renderGroupModal(p) {
+  var body = document.getElementById('modalBody');
+  var html = '<div class="group-detail">';
+  html += '<div class="gd-row"><span class="lbl">組別</span><span class="val">' + escHtml(p.groupId) + '</span></div>';
+  html += '<div class="gd-row"><span class="lbl">經驗值</span><span class="val" style="color:#ff6b6b;font-size:1.2rem;">' + p.totalExp + '</span></div>';
+  html += '<div class="gd-row"><span class="lbl">階級</span><span class="val">' + p.rank + '</span></div>';
+  if (p.nextRank) html += '<div class="gd-row"><span class="lbl">下階級</span><span class="val">' + p.nextRank + '（' + p.nextRankThreshold + ' EXP）</span></div>';
+  html += '</div>';
+  html += '<h4 style="color:#f0f6fc;margin:14px 0 8px;">📌 攤位加分</h4>';
+  html += '<div class="field"><label>選擇攤位</label><select id="addStationSelect">';
+  html += '<option value="">— 請選擇 —</option>';
+  allStations.forEach(function(s) {
+    html += '<option value="' + s.stationId + '">' + (s.location ? '[' + s.location + '] ' : '') + s.name + ' (+' + s.exp + ')</option>';
+  });
+  html += '</select></div>';
+  html += '<div style="margin-top:8px;"><button class="btn btn-pri" onclick="addStationExp(\'' + p.groupId + '\')">確認攤位加分</button></div>';
+  html += '<div class="bonus-section">';
+  html += '<h4>🎯 額外任務加分</h4>';
+  html += '<div class="bonus-row">';
+  html += '  <div class="field"><label>經驗值</label><input type="number" id="bonusExp" min="1" value="10"></div>';
+  html += '  <div class="field" style="flex:2;"><label>原因</label><input type="text" id="bonusReason" value="額外任務" placeholder="加分原因"></div>';
+  html += '</div>';
+  html += '<button class="btn btn-warn" onclick="addBonusExp(\'' + p.groupId + '\')">確認額外加分</button>';
+  html += '</div>';
+  if (p.stations) {
+    var done = p.stations.filter(function(s) { return s.completed; });
+    html += '<h4 style="color:#f0f6fc;margin:14px 0 8px;">✓ 已完成 (' + done.length + '/' + p.stations.length + ')</h4>';
+    html += '<div style="font-size:.8rem;max-height:140px;overflow-y:auto;">';
+    done.forEach(function(s) { html += '<div style="padding:3px 0;border-bottom:1px solid #21262d;"><span style="color:#3fb950;">✓</span> ' + escHtml(s.name) + ' <span style="color:#8b949e;">(' + (s.location || '') + ')</span></div>'; });
+    if (done.length === 0) html += '<div style="color:#8b949e;">尚未完成任何攤位</div>';
+    html += '</div>';
+  }
+  html += '<hr><button class="btn btn-dan" onclick="if(confirm(\'確認重置 ' + p.groupId + ' 的全部記錄？\')) resetGroup(\'' + p.groupId + '\')">🗑️ 重置此組別</button>';
+  document.getElementById('modalTitle').textContent = '👥 ' + p.groupId;
+  body.innerHTML = html;
+  document.getElementById('groupModal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('groupModal').classList.remove('show'); }
+
+function addStationExp(groupId) {
+  var stationId = document.getElementById('addStationSelect').value;
+  if (!stationId) { showToast('請選擇攤位'); return; }
+  api('addExp', { groupId: groupId, stationId: stationId, admin: 'admin' }, function(res) {
+    showToast(res.message);
+    if (res.success) { closeModal(); refreshGroups(); }
+  });
+}
+
+function addBonusExp(groupId) {
+  var exp = parseInt(document.getElementById('bonusExp').value);
+  var reason = document.getElementById('bonusReason').value.trim();
+  if (!exp || exp <= 0) { showToast('請輸入有效的經驗值'); return; }
+  if (!reason) { showToast('請輸入加分原因'); return; }
+  api('addBonus', { groupId: groupId, exp: exp, reason: reason, admin: 'admin' }, function(res) {
+    showToast(res.message);
+    if (res.success) { closeModal(); refreshGroups(); }
+  });
+}
+
+function resetGroup(groupId) {
+  api('resetGroup', { groupId: groupId }, function(res) { showToast(res.message); closeModal(); refreshGroups(); });
+}
+
+function refreshRecords() {
+  api('allRecords', function(d) {
+    allRecords = d || [];
+    var q = (document.getElementById('recordSearch').value || '').trim().toUpperCase();
+    var filtered = q ? allRecords.filter(function(r) { return r.groupId.toUpperCase().includes(q); }) : allRecords;
+    renderRecords(filtered);
+  });
+}
+
+function renderRecords(records) {
+  var wrap = document.getElementById('recordsWrap');
+  if (!records || records.length === 0) { wrap.innerHTML = '<div style="color:#8b949e;padding:20px;text-align:center;">暫無記錄</div>'; return; }
+  var html = '';
+  records.slice(-200).reverse().forEach(function(r) {
+    html += '<div class="record-row">';
+    html += '  <div><span class="rr-group">' + escHtml(r.groupId) + '</span><span style="color:#8b949e;"> | ' + escHtml(r.stationId) + '</span><span class="rr-time"> | ' + (r.time || '') + '</span></div>';
+    html += '  <div><span class="rr-exp">+' + r.exp + '</span><span style="color:#8b949e;font-size:.73rem;"> (' + (r.admin || '') + ')</span></div>';
+    html += '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function populateStationSelect() {
+  var sel = document.getElementById('stationSelect');
+  sel.innerHTML = '<option value="">— 揀攤位 —</option>';
+  allStations.forEach(function(s) {
+    sel.innerHTML += '<option value="' + s.stationId + '">' + s.stationId + ' - ' + s.name + '</option>';
+  });
+}
+
+function loadStationGroups() {
+  var sid = document.getElementById('stationSelect').value;
+  if (!sid) { document.getElementById('stationGroupList').innerHTML = '<p style="color:#8b949e;">揀個攤位睇下有邊啲組未完成</p>'; return; }
+  document.getElementById('stationGroupList').innerHTML = '<p style="color:#8b949e;">載入中...</p>';
+  api('pendingGroups', { stationId: sid }, function(groups) {
+    var list = document.getElementById('stationGroupList');
+    if (!groups || groups.length === 0) { list.innerHTML = '<div style="text-align:center;padding:30px;color:#3fb950;font-size:1rem;">✅ 所有組別已完成此攤位！</div>'; return; }
+    var q = (document.getElementById('stationSearch').value || '').trim().toUpperCase();
+    if (q) groups = groups.filter(function(g) { return g.groupId.toUpperCase().includes(q); });
+    var html = '<div style="margin-bottom:8px;font-size:.82rem;color:#8b949e;">尚有 <strong style="color:#f0f6fc;">' + groups.length + '</strong> 組未完成</div>';
+    groups.forEach(function(g) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-bottom:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;">';
+      html += '<div><strong style="font-size:1rem;">' + escHtml(g.groupId) + '</strong><br><span style="font-size:.75rem;color:#8b949e;">EXP: ' + g.totalExp + '</span></div>';
+      html += '<button class="btn btn-pri" onclick="completeStation(\'' + g.groupId + '\',\'' + sid + '\')" style="padding:8px 20px;font-size:.85rem;">+完成</button></div>';
+    });
+    list.innerHTML = html;
+  });
+}
+
+function filterStationGroups() { loadStationGroups(); }
+
+function completeStation(groupId, sid) {
+  api('addExp', { groupId: groupId, stationId: sid, admin: 'admin' }, function(res) {
+    showToast(res.message);
+    loadStationGroups();
+  });
+}
+
+function getRankTitle(exp) {
+  for (var i = ranks.length - 1; i >= 0; i--) { if (exp >= ranks[i].t) return ranks[i].title; }
+  return ranks[0].title;
+}
+
+function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('adminPwd').addEventListener('keydown', function(e) { if (e.key === 'Enter') handleAdminLogin(); });
+});
+</script>
+</body>
+</html>
