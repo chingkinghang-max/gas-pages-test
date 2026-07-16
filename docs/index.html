@@ -57,7 +57,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    var API_URL = 'https://script.google.com/macros/s/AKfycbwvDywf65L_r_4iBePQoBx013y5AFgxdDzI_rhhXqk_vA-BhXQ3NzchDRqfHrmbRrHO/exec';
+    var API_URL = 'https://script.google.com/macros/s/AKfycbwyYgRU96A3OqV7DVPvjq87DX5AMOw-G6dlkOdFGEpCgrSU_MAxb9yzRQRuZmlf27Fz/exec';
 
     function showToast(msg) {
       var t = document.getElementById('toast');
@@ -65,12 +65,14 @@
       setTimeout(function(){ t.style.display = 'none'; }, 3000);
     }
 
-    function api(endpoint, body) {
-      var opts = { method: body ? 'POST' : 'GET' };
-      if (body) {
-        opts.body = JSON.stringify(body);
+    function api(endpoint, params) {
+      var url = API_URL + '?action=' + endpoint;
+      if (params) {
+        for (var key in params) {
+          url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+        }
       }
-      return fetch(API_URL + '?action=' + endpoint, opts)
+      return fetch(url, { method: 'GET' })
         .then(function(r) { return r.json(); })
         .catch(function(err) { return { success: false, message: '連線失敗：' + err.message }; });
     }
@@ -92,7 +94,7 @@
       var msg = document.getElementById('inputMsg').value.trim();
       if (!name || !msg) { showToast('請填寫姓名和留言'); return; }
       document.getElementById('submitBtn').disabled = true;
-      api('add', { action: 'add', name: name, message: msg }).then(function(res) {
+      api('add', { name: name, message: msg }).then(function(res) {
         document.getElementById('submitBtn').disabled = false;
         if (res.success) {
           document.getElementById('inputName').value = '';

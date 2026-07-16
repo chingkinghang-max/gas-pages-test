@@ -17,7 +17,8 @@ function handleRequest(e, method) {
       var action = e.parameter.action;
       if (action === 'list') return toJson(listMessages());
       if (action === 'setup') return toJson(setupSheet());
-      return toJson({ success: false, message: '未知 action（可用：list, setup）' });
+      if (action === 'add') return toJson(addMessage(e.parameter.name, e.parameter.message));
+      return toJson({ success: false, message: '未知 action（可用：list, setup, add）' });
     }
 
     if (method === 'post') {
@@ -25,6 +26,8 @@ function handleRequest(e, method) {
       if (data.action === 'add') return toJson(addMessage(data.name, data.message));
       return toJson({ success: false, message: '未知 action（可用：add）' });
     }
+
+    return toJson({ success: false, message: '未知請求' });
   } catch (err) {
     return toJson({ success: false, message: err.message });
   }
