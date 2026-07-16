@@ -62,6 +62,7 @@ body{font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans TC','Microsoft Jheng
 .field input,.field select{width:100%;padding:8px 12px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#c9d1d9;font-size:.9rem;outline:none}
 .field input:focus,.field select:focus{border-color:#ff6b6b}
 .modal-actions{display:flex;gap:8px;margin-top:16px}
+.modal .st-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-bottom:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px}
 </style>
 </head>
 <body>
@@ -80,6 +81,7 @@ body{font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans TC','Microsoft Jheng
     <div id="loginError" class="error-msg"></div>
     <div style="text-align:center;margin-top:16px;">
       <a href="javascript:void(0)" onclick="openLeaderboard()" style="color:#ffd700;font-size:.75rem;text-decoration:none;margin-right:12px;">🏆 排行榜</a>
+      <a href="javascript:void(0)" onclick="openAdminModal()" style="color:#556677;font-size:.75rem;text-decoration:none;margin-right:12px;">📌 攤位管理</a>
       <a href="admin.html" style="color:#556677;font-size:.75rem;text-decoration:none;">⚙️ 管理後台</a>
     </div>
   </div>
@@ -115,6 +117,22 @@ body{font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans TC','Microsoft Jheng
 
 <div class="toast" id="toast"></div>
 
+<div class="modal-overlay" id="adminModal">
+  <div class="modal" style="max-width:520px;">
+    <div id="adminLoginForm">
+      <h3 style="color:#ff6b6b;margin-bottom:16px;">🔐 攤位管理員登入</h3>
+      <div class="field"><label>攤位編號</label><input type="text" id="adminStationId" placeholder="S01" style="text-transform:uppercase;"></div>
+      <div class="field"><label>管理員密碼</label><input type="password" id="adminPwdModal" placeholder="密碼"></div>
+      <button class="btn-pri" style="width:100%;margin-top:8px;" onclick="handleStationLogin()">登入</button>
+      <div id="adminLoginErrModal" style="color:#f85149;font-size:.85rem;margin-top:8px;text-align:center;"></div>
+    </div>
+    <div id="adminStationPanel" style="display:none;"></div>
+    <div class="modal-actions" style="justify-content:center;margin-top:12px;">
+      <button class="btn-sec" onclick="closeAdminModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="lbModal">
   <div class="modal" style="max-width:480px;">
     <h3 style="color:#ffd700;margin-bottom:16px;">🏆 即時排行榜</h3>
@@ -132,14 +150,16 @@ var currentGroupId = null;
 var rankThresholds = [0,150,300,450,600,750,900,1050,1200];
 var rankTitles = ['特工見習生','特工助理','助理特工','特工','特工隊長','特工首席隊長','特工署助理署長','特工署副署長','特工署署長'];
 
+var apiSeq = 0;
 function api(action, params, callback) {
   if (!callback) { callback = params; params = null; }
-  var url = API_URL + '?action=' + action + '&callback=apiCB';
+  var cb = 'apiCB' + (++apiSeq);
+  var url = API_URL + '?action=' + action + '&callback=' + cb;
   if (params) { for (var k in params) url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }
-  window.apiCB = function(d) { delete window.apiCB; callback(d); };
+  window[cb] = function(d) { delete window[cb]; callback(d); };
   var s = document.createElement('script');
   s.src = url;
-  s.onerror = function() { delete window.apiCB; callback({ success: false, message: '連線失敗，請確認網絡及授權' }); };
+  s.onerror = function() { delete window[cb]; callback({ success: false, message: '連線失敗，請確認網絡及授權' }); };
   document.body.appendChild(s);
 }
 
@@ -264,6 +284,56 @@ function refreshLeaderboard() {
     html += '</tbody></table>';
     body.innerHTML = html;
   });
+}
+
+// Station admin modal
+function openAdminModal() {
+  document.getElementById('adminLoginErrModal').textContent = '';
+  document.getElementById('adminLoginForm').style.display = 'block';
+  document.getElementById('adminStationPanel').style.display = 'none';
+  document.getElementById('adminStationPanel').innerHTML = '';
+  document.getElementById('adminStationId').value = '';
+  document.getElementById('adminPwdModal').value = '';
+  document.getElementById('adminModal').classList.add('show');
+}
+function closeAdminModal() { document.getElementById('adminModal').classList.remove('show'); }
+function handleStationLogin() {
+  var sid = document.getElementById('adminStationId').value.trim().toUpperCase();
+  var pwd = document.getElementById('adminPwdModal').value;
+  if (!sid) { document.getElementById('adminLoginErrModal').textContent = '請輸入攤位編號'; return; }
+  document.getElementById('adminLoginErrModal').textContent = '驗證中...';
+  api('loginStation', { stationId: sid, password: pwd }, function(res) {
+    if (res.success) {
+      document.getElementById('adminLoginForm').style.display = 'none';
+      var panel = document.getElementById('adminStationPanel');
+      panel.style.display = 'block';
+      panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
+        + '<div><h3 style="color:#ff6b6b;margin:0;">📌 ' + escHtml(res.station.stationId) + '</h3>'
+        + '<div style="font-size:.8rem;color:#8b949e;">' + escHtml(res.station.name) + ' <span style="color:#3fb950;">(+' + res.station.exp + ' EXP)</span></div></div>'
+        + '<button class="btn-sec" onclick="openAdminModal()" style="font-size:.75rem;">🔁 換攤位</button></div>'
+        + '<div id="stationGroupList" style="max-height:55vh;overflow-y:auto;"><div style="text-align:center;color:#8b949e;padding:20px;">載入中...</div></div>';
+      loadPendingGroups(res.station.stationId);
+    } else {
+      document.getElementById('adminLoginErrModal').textContent = res.message;
+    }
+  });
+}
+function loadPendingGroups(sid) {
+  api('pendingGroups', { stationId: sid }, function(groups) {
+    var list = document.getElementById('stationGroupList');
+    if (!list) return;
+    if (!groups || groups.length === 0) { list.innerHTML = '<div style="text-align:center;padding:30px;color:#3fb950;font-size:1rem;">✅ 所有組別已完成此攤位！</div>'; return; }
+    var html = '<div style="margin-bottom:8px;font-size:.82rem;color:#8b949e;">尚有 <strong style="color:#f0f6fc;">' + groups.length + '</strong> 組未完成</div>';
+    groups.forEach(function(g) {
+      html += '<div class="st-item">';
+      html += '<div><strong style="font-size:1rem;">' + escHtml(g.groupId) + '</strong><br><span style="font-size:.75rem;color:#8b949e;">EXP: ' + g.totalExp + '</span></div>';
+      html += '<button class="btn-pri" onclick="completeStation(\'' + g.groupId + '\',\'' + sid + '\')" style="padding:8px 20px;font-size:.85rem;">+完成</button></div>';
+    });
+    list.innerHTML = html;
+  });
+}
+function completeStation(groupId, sid) {
+  api('addExp', { groupId: groupId, stationId: sid, admin: 'admin' }, function(res) { showToast(res.message); loadPendingGroups(sid); });
 }
 
 function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

@@ -127,14 +127,16 @@ var allGroups = [], allStations = [], allRecords = [];
 
 var ranks = [{t:0,title:'特工見習生'},{t:150,title:'特工助理'},{t:300,title:'助理特工'},{t:450,title:'特工'},{t:600,title:'特工隊長'},{t:750,title:'特工首席隊長'},{t:900,title:'特工署助理署長'},{t:1050,title:'特工署副署長'},{t:1200,title:'特工署署長'}];
 
+var apiSeq = 0;
 function api(action, params, callback) {
   if (!callback) { callback = params; params = null; }
-  var url = API_URL + '?action=' + action + '&callback=apiCB';
+  var cb = 'apiCB' + (++apiSeq);
+  var url = API_URL + '?action=' + action + '&callback=' + cb;
   if (params) { for (var k in params) url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }
-  window.apiCB = function(d) { delete window.apiCB; callback(d); };
+  window[cb] = function(d) { delete window[cb]; callback(d); };
   var s = document.createElement('script');
   s.src = url;
-  s.onerror = function() { delete window.apiCB; callback({ success: false, message: '連線失敗' }); };
+  s.onerror = function() { delete window[cb]; callback({ success: false, message: '連線失敗' }); };
   document.body.appendChild(s);
 }
 
