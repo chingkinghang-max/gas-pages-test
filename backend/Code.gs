@@ -15,26 +15,32 @@ function handleRequest(e, method) {
   try {
     if (method === 'get') {
       var action = e.parameter.action;
-      if (action === 'list') return toJson(listMessages());
-      if (action === 'setup') return toJson(setupSheet());
-      if (action === 'add') return toJson(addMessage(e.parameter.name, e.parameter.message));
-      return toJson({ success: false, message: '未知 action（可用：list, setup, add）' });
+      if (action === 'list') return toJson(listMessages(), e);
+      if (action === 'setup') return toJson(setupSheet(), e);
+      if (action === 'add') return toJson(addMessage(e.parameter.name, e.parameter.message), e);
+      return toJson({ success: false, message: '未知 action（可用：list, setup, add）' }, e);
     }
 
     if (method === 'post') {
       var data = JSON.parse(e.postData.contents);
-      if (data.action === 'add') return toJson(addMessage(data.name, data.message));
-      return toJson({ success: false, message: '未知 action（可用：add）' });
+      if (data.action === 'add') return toJson(addMessage(data.name, data.message), e);
+      return toJson({ success: false, message: '未知 action（可用：add）' }, e);
     }
 
-    return toJson({ success: false, message: '未知請求' });
+    return toJson({ success: false, message: '未知請求' }, e);
   } catch (err) {
-    return toJson({ success: false, message: err.message });
+    return toJson({ success: false, message: err.message }, e);
   }
 }
 
-function toJson(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
+function toJson(obj, e) {
+  var json = JSON.stringify(obj);
+  var callback = e && e.parameter && e.parameter.callback;
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json)
     .setMimeType(ContentService.MimeType.JSON);
 }
 

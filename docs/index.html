@@ -57,7 +57,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    var API_URL = 'https://script.google.com/macros/s/AKfycbxIoQfC2JpvEnJXcwZiUNRzSdbW2ZUgAXwjgZktmnqjHhXIiB7ziauOH_6SjeBwxlCQ/exec';
+    var API_URL = 'https://script.google.com/macros/s/AKfycbzhXKYv296y_YFXVX2ZisjzKEd6OZEwdN7XsFELvCMWj6d3o9v1-EmWTKibUzbiuBWl/exec';
 
     function showToast(msg) {
       var t = document.getElementById('toast');
@@ -65,16 +65,28 @@
       setTimeout(function(){ t.style.display = 'none'; }, 3000);
     }
 
+    var jsonpId = 0;
     function api(endpoint, params) {
-      var url = API_URL + '?action=' + endpoint;
-      if (params) {
-        for (var key in params) {
-          url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+      return new Promise(function(resolve) {
+        var url = API_URL + '?action=' + endpoint + '&callback=jsonp_cb';
+        if (params) {
+          for (var key in params) {
+            url += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+          }
         }
-      }
-      return fetch(url, { method: 'GET' })
-        .then(function(r) { return r.json(); })
-        .catch(function(err) { return { success: false, message: '連線失敗：' + err.message }; });
+        var cbName = 'jsonp_cb';
+        window[cbName] = function(data) {
+          delete window[cbName];
+          resolve(data);
+        };
+        var script = document.createElement('script');
+        script.src = url;
+        script.onerror = function() {
+          delete window[cbName];
+          resolve({ success: false, message: '連線失敗，請確認 GAS 已授權' });
+        };
+        document.body.appendChild(script);
+      });
     }
 
     function runSetup() {
