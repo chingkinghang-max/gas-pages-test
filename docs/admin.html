@@ -136,8 +136,10 @@ function api(action, params, callback) {
   window[cb] = function(d) { delete window[cb]; callback(d); };
   var s = document.createElement('script');
   s.src = url;
-  s.onerror = function() { delete window[cb]; callback({ success: false, message: '連線失敗' }); };
+  s.onload = function() { if (s.parentNode) s.parentNode.removeChild(s); };
+  s.onerror = function() { if (s.parentNode) s.parentNode.removeChild(s); delete window[cb]; callback({ success: false, message: '連線失敗' }); };
   document.body.appendChild(s);
+  setTimeout(function() { if (window[cb]) { delete window[cb]; if (s.parentNode) s.parentNode.removeChild(s); callback({ success: false, message: '請求逾時' }); } }, 15000);
 }
 
 function showToast(m) {
@@ -168,10 +170,11 @@ function adminLogout() {
 
 function loadAdminData() {
   var loaded = { g: false, s: false, r: false };
+  function safeArr(d) { return Array.isArray(d) ? d : []; }
   function check() { if (loaded.g && loaded.s && loaded.r) { renderGroups(allGroups); populateStationSelect(); } }
-  api('allGroups', function(d) { allGroups = d || []; loaded.g = true; check(); });
-  api('allStations', function(d) { allStations = d || []; loaded.s = true; check(); });
-  api('allRecords', function(d) { allRecords = d || []; loaded.r = true; check(); });
+  api('allGroups', function(d) { allGroups = safeArr(d); loaded.g = true; check(); });
+  api('allStations', function(d) { allStations = safeArr(d); loaded.s = true; check(); });
+  api('allRecords', function(d) { allRecords = safeArr(d); loaded.r = true; check(); });
 }
 
 function switchTab(name) {

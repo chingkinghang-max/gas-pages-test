@@ -189,7 +189,7 @@ function getAllGroups() {
   try {
     var sheet = getSheet(SHEET_NAME_GROUPS); if (!sheet) return [];
     var data = sheet.getDataRange().getValues(); var result = [];
-    for (var i = 1; i < data.length; i++) result.push({ groupId: data[i][0], password: data[i][1], totalExp: data[i][2] || 0 });
+    for (var i = 1; i < data.length; i++) result.push({ groupId: data[i][0], totalExp: data[i][2] || 0 });
     return result;
   } catch (e) { return []; }
 }
@@ -260,12 +260,18 @@ function getAllRecords() {
 function addExp(groupId, stationId, adminName) {
   try {
     var stationsSheet = getSheet(SHEET_NAME_STATIONS); if (!stationsSheet) return { success: false, message: '系統錯誤：無法讀取攤位表。' };
-    var sData = stationsSheet.getDataRange().getValues(); var exp = 0; var stationName = '';
-    for (var i = 1; i < sData.length; i++) { if (String(sData[i][0]) === String(stationId)) { exp = Number(sData[i][3]); stationName = sData[i][2]; break; } }
+    var sData = stationsSheet.getDataRange().getValues(); var exp = 0; var stationName = ''; var validIds = {};
+    for (var i = 1; i < sData.length; i++) { validIds[String(sData[i][0]).toUpperCase()] = true; if (String(sData[i][0]) === String(stationId)) { exp = Number(sData[i][3]); stationName = sData[i][2]; } }
     if (exp === 0) return { success: false, message: '找不到攤位或經驗值為 0。' };
     var recordsSheet = getSheet(SHEET_NAME_RECORDS); if (!recordsSheet) return { success: false, message: '系統錯誤：無法讀取記錄表。' };
     var rData = recordsSheet.getDataRange().getValues();
-    for (var j = 1; j < rData.length; j++) { if (String(rData[j][1]).toUpperCase() === String(groupId).toUpperCase() && String(rData[j][2]) === String(stationId)) return { success: false, message: '此組別已完成此攤位，不能重複加分。' }; }
+    for (var j = 1; j < rData.length; j++) {
+      // Only match against known station IDs (skip bonus/other records)
+      var rid = String(rData[j][2]);
+      if (String(rData[j][1]).toUpperCase() === String(groupId).toUpperCase() && rid === String(stationId) && validIds[rid.toUpperCase()]) {
+        return { success: false, message: '此組別已完成此攤位，不能重複加分。' };
+      }
+    }
     var timestamp = Utilities.formatDate(new Date(), 'Asia/Hong_Kong', 'yyyy-MM-dd HH:mm:ss');
     var recordId = 'R' + new Date().getTime();
     recordsSheet.appendRow([recordId, groupId, stationId, exp, timestamp, adminName]);
