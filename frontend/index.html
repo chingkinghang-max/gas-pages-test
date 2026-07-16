@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>留言板 · GitHub Pages + GAS API</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; display: flex; justify-content: center; padding: 40px 20px; }
+    .container { max-width: 600px; width: 100%; }
+    h1 { font-size: 1.5rem; color: #ff6b6b; margin-bottom: 4px; }
+    .subtitle { font-size: 0.85rem; color: #8b949e; margin-bottom: 24px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 1rem; color: #f0f6fc; margin-bottom: 12px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 0.8rem; color: #8b949e; margin-bottom: 4px; }
+    .field input, .field textarea { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #30363d; background: #0d1117; color: #c9d1d9; font-size: 0.95rem; outline: none; }
+    .field input:focus, .field textarea:focus { border-color: #ff6b6b; }
+    .field textarea { resize: vertical; min-height: 80px; }
+    button { padding: 10px 24px; border: none; border-radius: 8px; background: #238636; color: #fff; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .msg-item { padding: 12px 0; border-bottom: 1px solid #21262d; }
+    .msg-item:last-child { border-bottom: none; }
+    .msg-name { font-weight: 600; color: #ff6b6b; font-size: 0.9rem; }
+    .msg-text { color: #f0f6fc; margin: 4px 0; font-size: 0.9rem; }
+    .msg-time { font-size: 0.75rem; color: #8b949e; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #161b22; border: 1px solid #30363d; color: #c9d1d9; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; z-index: 100; display: none; }
+    #setupBanner { background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.3); border-radius: 8px; padding: 12px; font-size: 0.85rem; margin-bottom: 16px; display: none; }
+    #setupBanner a { color: #ffd700; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 留言板</h1>
+    <div class="subtitle">GitHub Pages → GAS API → Google Sheets</div>
+
+    <div id="setupBanner">
+      ⚠️ 試算表未初始化，請先
+      <a href="javascript:void(0)" onclick="runSetup()">按此初始化</a>
+    </div>
+
+    <div class="card">
+      <h2>✏️ 留低你想講嘅嘢</h2>
+      <div class="field"><label>你嘅姓名</label><input type="text" id="inputName" placeholder="例如：小明"></div>
+      <div class="field"><label>留言內容</label><textarea id="inputMsg" placeholder="你嘅說話..."></textarea></div>
+      <button onclick="submitMessage()" id="submitBtn">送出留言</button>
+      <div id="formFeedback" style="margin-top:10px;font-size:0.85rem;color:#3fb950;"></div>
+    </div>
+
+    <div class="card">
+      <h2>💬 最新留言</h2>
+      <div id="messageList"><p style="color:#8b949e;">載入中...</p></div>
+      <button onclick="loadMessages()" style="margin-top:12px;width:100%;background:#21262d;border:1px solid #30363d;">🔄 重新整理</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    var API_URL = 'https://script.google.com/macros/s/AKfycbwvDywf65L_r_4iBePQoBx013y5AFgxdDzI_rhhXqk_vA-BhXQ3NzchDRqfHrmbRrHO/exec';
+
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg; t.style.display = 'block';
+      setTimeout(function(){ t.style.display = 'none'; }, 3000);
+    }
+
+    function api(endpoint, body) {
+      var opts = { method: body ? 'POST' : 'GET' };
+      if (body) {
+        opts.body = JSON.stringify(body);
+      }
+      return fetch(API_URL + '?action=' + endpoint, opts)
+        .then(function(r) { return r.json(); })
+        .catch(function(err) { return { success: false, message: '連線失敗：' + err.message }; });
+    }
+
+    function runSetup() {
+      api('setup').then(function(res) {
+        if (res.success) {
+          showToast('✅ 試算表已初始化');
+          document.getElementById('setupBanner').style.display = 'none';
+          loadMessages();
+        } else {
+          showToast('❌ ' + res.message);
+        }
+      });
+    }
+
+    function submitMessage() {
+      var name = document.getElementById('inputName').value.trim();
+      var msg = document.getElementById('inputMsg').value.trim();
+      if (!name || !msg) { showToast('請填寫姓名和留言'); return; }
+      document.getElementById('submitBtn').disabled = true;
+      api('add', { action: 'add', name: name, message: msg }).then(function(res) {
+        document.getElementById('submitBtn').disabled = false;
+        if (res.success) {
+          document.getElementById('inputName').value = '';
+          document.getElementById('inputMsg').value = '';
+          showToast('✅ ' + res.message);
+          loadMessages();
+        } else {
+          showToast('❌ ' + res.message);
+        }
+      });
+    }
+
+    function loadMessages() {
+      var list = document.getElementById('messageList');
+      list.innerHTML = '<p style="color:#8b949e;">載入中...</p>';
+      api('list').then(function(res) {
+        if (!res.success) {
+          if (res.message && res.message.indexOf('未初始化') !== -1) {
+            document.getElementById('setupBanner').style.display = 'block';
+            list.innerHTML = '<p style="color:#8b949e;">請先初始化試算表。</p>';
+          } else {
+            list.innerHTML = '<p style="color:#f85149;">錯誤：' + res.message + '</p>';
+          }
+          return;
+        }
+        document.getElementById('setupBanner').style.display = 'none';
+        if (!res.messages || res.messages.length === 0) {
+          list.innerHTML = '<p style="color:#8b949e;">暫無留言。</p>'; return;
+        }
+        var html = '';
+        res.messages.forEach(function(m) {
+          html += '<div class="msg-item">';
+          html += '  <div class="msg-name">' + escHtml(m.name) + '</div>';
+          html += '  <div class="msg-text">' + escHtml(m.message) + '</div>';
+          html += '  <div class="msg-time">' + (m.time || '') + '</div>';
+          html += '</div>';
+        });
+        list.innerHTML = html;
+      });
+    }
+
+    function escHtml(str) { if (!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    loadMessages();
+  </script>
+</body>
+</html>
