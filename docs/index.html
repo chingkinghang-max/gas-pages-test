@@ -332,13 +332,18 @@ function loadPendingGroups(sid) {
     groups.forEach(function(g) {
       html += '<div class="st-item">';
       html += '<div><strong style="font-size:1rem;">' + escHtml(g.groupId) + '</strong><br><span style="font-size:.75rem;color:#8b949e;">EXP: ' + g.totalExp + '</span></div>';
-      html += '<button class="btn-pri" onclick="completeStation(\'' + g.groupId + '\',\'' + sid + '\')" style="padding:8px 20px;font-size:.85rem;">+完成</button></div>';
+      html += '<button class="btn-pri" id="btn_' + g.groupId + '" onclick="completeStation(\'' + g.groupId + '\',\'' + sid + '\')" style="padding:8px 20px;font-size:.85rem;">+完成</button></div>';
     });
     list.innerHTML = html;
   });
 }
 function completeStation(groupId, sid) {
-  api('addExp', { groupId: groupId, stationId: sid, admin: 'admin' }, function(res) { showToast(res.message); loadPendingGroups(sid); });
+  var btn = document.getElementById('btn_' + groupId);
+  if (btn) { btn.disabled = true; btn.textContent = '提交中…'; btn.style.opacity = '0.5'; }
+  api('addExp', { groupId: groupId, stationId: sid, admin: 'admin' }, function(res) {
+    if (res.success) { showToast('✅ ' + res.message); loadPendingGroups(sid); }
+    else { showToast('❌ ' + res.message); if (btn) { btn.disabled = false; btn.textContent = '+完成'; btn.style.opacity = '1'; } }
+  });
 }
 
 function escHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
