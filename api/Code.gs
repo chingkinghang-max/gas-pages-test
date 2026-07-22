@@ -266,7 +266,7 @@ function addExp(groupId, stationId, adminName) {
     var stationsSheet = getSheet(SHEET_NAME_STATIONS); if (!stationsSheet) return { success: false, message: '系統錯誤：無法讀取攤位表。' };
     var sData = stationsSheet.getDataRange().getValues(); var exp = 0; var stationName = ''; var validIds = {};
     for (var i = 1; i < sData.length; i++) { validIds[String(sData[i][0]).toUpperCase()] = true; if (String(sData[i][0]) === String(stationId)) { exp = Number(sData[i][3]); stationName = sData[i][2]; } }
-    if (exp === 0) return { success: false, message: '找不到攤位或經驗值為 0。' };
+    if (!exp || exp <= 0) return { success: false, message: '找不到攤位或經驗值為 0。' };
     var recordsSheet = getSheet(SHEET_NAME_RECORDS); if (!recordsSheet) return { success: false, message: '系統錯誤：無法讀取記錄表。' };
     var rData = recordsSheet.getDataRange().getValues();
     for (var j = 1; j < rData.length; j++) {
