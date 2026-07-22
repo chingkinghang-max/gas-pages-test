@@ -42,6 +42,7 @@ function doGet(e) {
     else if (action === 'allGroups')     result = getAllGroups();
     else if (action === 'allRecords')    result = getAllRecords();
     else if (action === 'addExp')        result = addExp(p.groupId, p.stationId, p.admin || 'admin');
+    else if (action === 'addExpWin')     result = addExpWin(p.groupId, p.stationId, p.admin || 'admin');
     else if (action === 'addBonus')      result = addBonusExp(p.groupId, Number(p.exp), p.reason, p.admin || 'admin');
     else if (action === 'resetGroup')    result = resetGroup(p.groupId);
     else if (action === 'resetAll')      result = resetAllGroups();
@@ -100,7 +101,13 @@ function setupSheets() {
     cs = ss.insertSheet(SHEET_NAME_CONFIG);
     cs.appendRow(['key', 'value']);
     cs.appendRow([ADMIN_PASSWORD_PROP, 'admin123']);
+    cs.appendRow(['VICTORY_BONUS_EXP', '50']);
     cs.setFrozenRows(1);
+  } else {
+    var csData = cs.getDataRange().getValues();
+    var hasVictory = false;
+    for (var i = 1; i < csData.length; i++) { if (csData[i][0] === 'VICTORY_BONUS_EXP') { hasVictory = true; break; } }
+    if (!hasVictory) cs.appendRow(['VICTORY_BONUS_EXP', '50']);
   }
   return { success: true, message: '試算表已初始化' };
 }
@@ -283,6 +290,25 @@ function addExp(groupId, stationId, adminName) {
     var gData = gs.getDataRange().getValues();
     for (var k = 1; k < gData.length; k++) { if (String(gData[k][0]).toUpperCase() === String(groupId).toUpperCase()) { var newExp = (Number(gData[k][2]) || 0) + exp; gs.getRange(k + 1, 3).setValue(newExp); break; } }
     return { success: true, message: '已為 ' + groupId + ' 加入 ' + exp + ' EXP（' + stationName + '）' };
+  } catch (e) { return { success: false, message: '系統錯誤：' + e.message }; }
+}
+
+function addExpWin(groupId, stationId, adminName) {
+  try {
+    var stationsSheet = getSheet(SHEET_NAME_STATIONS); if (!stationsSheet) return { success: false, message: '系統錯誤：無法讀取攤位表。' };
+    var sData = stationsSheet.getDataRange().getValues(); var exp = 0; var stationName = ''; var validIds = {};
+    for (var i = 1; i < sData.length; i++) { validIds[String(sData[i][0]).toUpperCase()] = true; if (String(sData[i][0]).toUpperCase() === String(stationId).toUpperCase()) { exp = Number(sData[i][3]); stationName = sData[i][2]; } }
+    var recordsSheet = getSheet(SHEET_NAME_RECORDS); if (!recordsSheet) return { success: false, message: '系統錯誤：無法讀取記錄表。' };
+    var rData = recordsSheet.getDataRange().getValues();
+    var alreadyCompleted = false;
+    for (var j = 1; j < rData.length; j++) { var rid = String(rData[j][2]); if (String(rData[j][1]).toUpperCase() === String(groupId).toUpperCase() && validIds[rid.toUpperCase()] && rid.toUpperCase() === String(stationId).toUpperCase()) { alreadyCompleted = true; break; } }
+    var hasVictory = false;
+    for (var k = 1; k < rData.length; k++) { if (String(rData[k][1]).toUpperCase() === String(groupId).toUpperCase() && String(rData[k][2]) === '拔河勝利') { hasVictory = true; break; } }
+    var msgs = [];
+    if (!alreadyCompleted && exp > 0) { var r = addExp(groupId, stationId, adminName); if (r.success) msgs.push(exp + ' EXP（' + stationName + '）'); }
+    if (!hasVictory) { var vExp = Number(getSetting('VICTORY_BONUS_EXP')) || 50; var r2 = addBonusExp(groupId, vExp, '拔河勝利', adminName); if (r2.success) msgs.push(vExp + ' EXP（拔河勝利）'); }
+    if (msgs.length > 0) return { success: true, message: '已為 ' + groupId + ' 加入 ' + msgs.join(' + ') };
+    return { success: false, message: '此組已完成所有獎勵' };
   } catch (e) { return { success: false, message: '系統錯誤：' + e.message }; }
 }
 

@@ -329,10 +329,14 @@ function loadPendingGroups(sid) {
     if (!list) return;
     if (!groups || groups.length === 0) { list.innerHTML = '<div style="text-align:center;padding:30px;color:#3fb950;font-size:1rem;">✅ 所有組別已完成此攤位！</div>'; return; }
     var html = '<div style="margin-bottom:8px;font-size:.82rem;color:#8b949e;">尚有 <strong style="color:#f0f6fc;">' + groups.length + '</strong> 組未完成</div>';
+    var isS07 = sid.toUpperCase() === 'S07';
     groups.forEach(function(g) {
       html += '<div class="st-item">';
       html += '<div><strong style="font-size:1rem;">' + escHtml(g.groupId) + '</strong><br><span style="font-size:.75rem;color:#8b949e;">EXP: ' + g.totalExp + '</span></div>';
-      html += '<button class="btn-pri" id="btn_' + g.groupId + '" onclick="completeStation(\'' + g.groupId + '\',\'' + sid + '\')" style="padding:8px 20px;font-size:.85rem;">+完成</button></div>';
+      html += '<div style="display:flex;gap:6px;">';
+      html += '<button class="btn-pri" id="btn_' + g.groupId + '" onclick="completeStation(\'' + g.groupId + '\',\'' + sid + '\')" style="padding:8px 16px;font-size:.85rem;">+完成</button>';
+      if (isS07) { html += '<button id="btnw_' + g.groupId + '" onclick="completeStationWin(\'' + g.groupId + '\',\'' + sid + '\')" style="padding:8px 16px;font-size:.85rem;background:linear-gradient(135deg,#f7971e,#ffd200);color:#1a1a2e;border:none;border-radius:6px;font-weight:600;cursor:pointer;">🏆+勝利</button>'; }
+      html += '</div></div>';
     });
     list.innerHTML = html;
   });
@@ -343,6 +347,16 @@ function completeStation(groupId, sid) {
   api('addExp', { groupId: groupId, stationId: sid, admin: 'admin' }, function(res) {
     if (res.success) { showToast('✅ ' + res.message); loadPendingGroups(sid); }
     else { showToast('❌ ' + res.message); if (btn) { btn.disabled = false; btn.textContent = '+完成'; btn.style.opacity = '1'; } }
+  });
+}
+function completeStationWin(groupId, sid) {
+  var btn = document.getElementById('btnw_' + groupId);
+  var btnNormal = document.getElementById('btn_' + groupId);
+  if (btn) { btn.disabled = true; btn.textContent = '提交中…'; btn.style.opacity = '0.5'; }
+  if (btnNormal) { btnNormal.disabled = true; btnNormal.style.opacity = '0.5'; }
+  api('addExpWin', { groupId: groupId, stationId: sid, admin: 'admin' }, function(res) {
+    if (res.success) { showToast('✅ ' + res.message); loadPendingGroups(sid); }
+    else { showToast('❌ ' + res.message); if (btn) { btn.disabled = false; btn.textContent = '🏆+勝利'; btn.style.opacity = '1'; } if (btnNormal) { btnNormal.disabled = false; btnNormal.style.opacity = '1'; } }
   });
 }
 
