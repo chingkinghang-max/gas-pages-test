@@ -205,7 +205,7 @@ function filterGroups() {
 }
 
 function refreshGroups() {
-  api('allGroups', function(d) { allGroups = d || []; renderGroups(allGroups); showToast('已刷新，共 ' + (d ? d.length : 0) + ' 組'); });
+  api('allGroups', function(d) { allGroups = Array.isArray(d) ? d : []; renderGroups(allGroups); showToast('已刷新，共 ' + allGroups.length + ' 組'); });
 }
 
 function openGroupModal(groupId) {
@@ -276,12 +276,12 @@ function addBonusExp(groupId) {
 }
 
 function resetGroup(groupId) {
-  api('resetGroup', { groupId: groupId }, function(res) { showToast(res.message); closeModal(); refreshGroups(); });
+  api('resetGroup', { groupId: groupId }, function(res) { showToast(res.message); if (res.success) { closeModal(); refreshGroups(); } });
 }
 
 function refreshRecords() {
   api('allRecords', function(d) {
-    allRecords = d || [];
+    allRecords = Array.isArray(d) ? d : [];
     var q = (document.getElementById('recordSearch').value || '').trim().toUpperCase();
     var filtered = q ? allRecords.filter(function(r) { return r.groupId.toUpperCase().includes(q); }) : allRecords;
     renderRecords(filtered);

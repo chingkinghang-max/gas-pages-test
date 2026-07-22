@@ -304,7 +304,7 @@ function openAdminModal() {
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('show'); }
 function handleStationLogin() {
   var sid = document.getElementById('adminStationId').value.trim().toUpperCase();
-  var pwd = document.getElementById('adminPwdModal').value;
+  var pwd = document.getElementById('adminPwdModal').value.trim();
   if (!sid) { document.getElementById('adminLoginErrModal').textContent = '請輸入攤位編號'; return; }
   document.getElementById('adminLoginErrModal').textContent = '驗證中...';
   api('loginStation', { stationId: sid, password: pwd }, function(res) {

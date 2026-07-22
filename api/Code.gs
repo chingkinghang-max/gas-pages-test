@@ -167,10 +167,12 @@ function getGroupProfile(groupId) {
       }
     }
     if (!found) return { success: false, message: '找不到組別。' };
+    var validStationIds = {};
+    for (var ks = 1; ks < sData.length; ks++) validStationIds[String(sData[ks][0]).toUpperCase()] = true;
     var completed = {}; var groupRecords = [];
     for (var j = 1; j < rData.length; j++) {
       if (String(rData[j][1]).toUpperCase() === String(found.groupId).toUpperCase()) {
-        completed[String(rData[j][2])] = true;
+        if (validStationIds[String(rData[j][2]).toUpperCase()]) completed[String(rData[j][2])] = true;
         groupRecords.push({ recordId: rData[j][0], stationId: rData[j][2], exp: rData[j][3], time: rData[j][4], admin: rData[j][5] });
       }
     }
@@ -227,11 +229,13 @@ function loginStationAdmin(stationId, password) {
 
 function getStationPendingGroups(stationId) {
   try {
-    var gs = getSheet(SHEET_NAME_GROUPS); var rs = getSheet(SHEET_NAME_RECORDS);
+    var gs = getSheet(SHEET_NAME_GROUPS); var rs = getSheet(SHEET_NAME_RECORDS); var ss = getSheet(SHEET_NAME_STATIONS);
     if (!gs || !rs) return [];
     var gData = gs.getDataRange().getValues(); var rData = rs.getDataRange().getValues();
+    var validIds = {};
+    if (ss) { var sd = ss.getDataRange().getValues(); for (var x = 1; x < sd.length; x++) validIds[String(sd[x][0]).toUpperCase()] = true; }
     var done = {};
-    for (var i = 1; i < rData.length; i++) { if (String(rData[i][2]).toUpperCase() === String(stationId).toUpperCase()) done[String(rData[i][1]).toUpperCase()] = true; }
+    for (var i = 1; i < rData.length; i++) { var rsid = String(rData[i][2]).toUpperCase(); if (validIds[rsid] && rsid === String(stationId).toUpperCase()) done[String(rData[i][1]).toUpperCase()] = true; }
     var result = [];
     for (var j = 1; j < gData.length; j++) { var gid = String(gData[j][0]); if (!done[gid.toUpperCase()]) result.push({ groupId: gid, totalExp: gData[j][2] || 0 }); }
     result.sort(function(a, b) { return a.groupId.localeCompare(b.groupId); });
